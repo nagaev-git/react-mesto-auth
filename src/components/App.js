@@ -1,17 +1,21 @@
 import React, { useEffect } from "react";
-import logo from "../images/header/logo.svg";
-import Header from "./Header";
-import Main from "./Main";
+import { Route, Switch, Redirect, useHistory } from "react-router-dom";
 import ImagePopup from "./ImagePopup";
-import Footer from "./Footer";
 import api from "../utils/Api";
 import { CurrentUserContext } from "../contexts/CurrentUserContext";
 import EditProfilePopup from "./EditProfilePopup";
 import EditAvatarPopup from "./EditAvatarPopup";
 import AddPlacePopup from "./AddPlacePopup";
 import DeletePlacePopup from "./DeletePlacePopup";
+import ProtectedRoute from "./ProtectedRoute";
+import Main from "./Main";
+import Login from "./Login";
+import Register from "./Register";
+import InfoToolTip from "./InfoTooltip";
+import * as auth from "../utils/Auth";
 
 export default function App() {
+  const history = useHistory();
   const [isEditAvatarPopupOpen, setIsEditAvatarPopupOpen] =
     React.useState(false);
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] =
@@ -23,6 +27,14 @@ export default function App() {
   const [selectedCard, setSelectedCard] = React.useState({});
   const [currentUser, setCurrentUser] = React.useState({});
   const [cards, setCards] = React.useState([]);
+  const [loggedIn, setLoggedIn] = React.useState(false);
+  const [email, setEmail] = React.useState("");
+  const [isRegisterPopupOpen, setIsRegisterPopupOpen] = React.useState(false);
+  const [isSuccessRegister, setIsSuccessRegister] = React.useState(false);
+
+  React.useEffect(() => {
+    tokenCheck();
+  });
 
   React.useEffect(() => {
     api
@@ -154,24 +166,112 @@ export default function App() {
     setIsAddPlacePopupOpen(false);
     setIsCardImpPopupOpen(false);
     setIsDeletePlacePopupOpen(false);
+    setIsRegisterPopupOpen(false);
     setSelectedCard({});
   };
+
+  const headerButtonHandlerSignIn = () => {
+    history.push("/sign-up");
+  };
+
+  const headerButtonHandlerSignUp = () => {
+    history.push("/sign-in");
+  };
+
+  const headerButtonHandlerMain = () => {
+    localStorage.removeItem("jwt");
+    setLoggedIn(false);
+    history.push("/sign-in");
+  };
+
+  const tokenCheck = () => {
+    const jwt = localStorage.getItem("jwt");
+
+    if (jwt) {
+      auth
+        .checkToken(jwt)
+        .then((res) => {
+          if (res.data.email) {
+            setEmail(res.data.email);
+            setLoggedIn(true);
+            history.push("/");
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+  };
+
+  const handleLogin = (password, email) => {
+    auth
+      .authorize(password, email)
+      .then((data) => {
+        if (data.token) {
+          localStorage.setItem("jwt", data.token);
+          setLoggedIn(true);
+          setEmail(email);
+          history.push("/");
+        }
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const handleRegister = (password, email) => {
+    auth
+      .register(password, email)
+      .then((data) => {
+        if (data.data.email) {
+          setIsSuccessRegister(true);
+          setIsRegisterPopupOpen(true);
+        }
+        history.push("/sign-in");
+      })
+      .catch((err) => {
+        console.log(err);
+        setIsSuccessRegister(false);
+        setIsRegisterPopupOpen(true);
+      });
+  };
+
+  // const onSignOut = () => {};
 
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="App">
         <div className="page">
-          <Header logo={logo} />
-          <Main
-            onEditAvatar={handleEditAvatarClick}
-            onEditProfile={handleEditProfileClick}
-            onAddPlace={handleAddPlaceClick}
-            onCardClick={handleCardClick}
-            cards={cards}
-            onCardLike={handleCardLike}
-            onCardDelete={handleDeleteClick}
-          />
-          <Footer />
+          <Switch>
+            <Route path="/sign-up">
+              <Register
+                headerHandler={headerButtonHandlerSignUp}
+                handlerRegister={handleRegister}
+              />
+            </Route>
+            <Route path="/sign-in">
+              <Login
+                headerHandler={headerButtonHandlerSignIn}
+                handlerLogin={handleLogin}
+              />
+            </Route>
+            <ProtectedRoute
+              exact
+              path="/"
+              loggedIn={loggedIn}
+              component={Main}
+              onAddPlace={handleAddPlaceClick}
+              onEditAvatar={handleEditAvatarClick}
+              onEditProfile={handleEditProfileClick}
+              cards={cards}
+              onCardClick={handleCardClick}
+              onCardLike={handleCardLike}
+              onCardDelete={handleDeleteClick}
+              headerHandler={headerButtonHandlerMain}
+              email={email}
+            />
+            <Route path="*">
+              <Redirect to="/" />
+            </Route>
+          </Switch>
 
           <EditAvatarPopup
             isOpen={isEditAvatarPopupOpen}
@@ -198,6 +298,11 @@ export default function App() {
             card={selectedCard}
             isOpen={isCardImpPopupOpen}
             onClose={closeAllPopups}
+          />
+          <InfoToolTip
+            isOpen={isRegisterPopupOpen}
+            onClose={closeAllPopups}
+            isSucces={isSuccessRegister}
           />
         </div>
       </div>
