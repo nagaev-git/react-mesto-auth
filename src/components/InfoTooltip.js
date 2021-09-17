@@ -24,7 +24,7 @@ export default function InfoToolTip({ isOpen, isSucces, onClose }) {
         <button
           aria-label="Закрыть"
           type="button"
-          className="popup__toogle info-tool-tip-popup__close-button"
+          className="popup__toggle info-tool-tip-popup__close-button"
           onClick={onClose}
         ></button>
       </div>

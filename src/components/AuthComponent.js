@@ -37,7 +37,7 @@ export default function AuthComponent({
         textButton={isLogin ? "Регистрация" : "Войти"}
         headerHandler={headerHandler}
       />
-      <section className="auth page__auth">
+      <section className="auth">
         <h1 className="auth__header">{title}</h1>
         <form
           onSubmit={formSubmitHandler}
