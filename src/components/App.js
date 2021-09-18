@@ -34,7 +34,7 @@ export default function App() {
 
   React.useEffect(() => {
     tokenCheck();
-  });
+  }, []);
 
   React.useEffect(() => {
     api
@@ -73,7 +73,7 @@ export default function App() {
     api
       .deleteCard(selectedCard._id)
       .then(() => {
-        setCards(cards.filter((c) => c._id !== selectedCard._id));
+        setCards((state) => state.filter((c) => c._id !== selectedCard._id));
       })
       .then(() => closeAllPopups())
       .catch((err) => console.log(err))
@@ -121,8 +121,6 @@ export default function App() {
   const handleAddPlaceSubmit = (
     newCard,
     setButtonStatus,
-    inputCardName,
-    inputCardLink
   ) => {
     setButtonStatus("Сохранение...");
 
